@@ -1,0 +1,22 @@
+{
+  "name": "worldcup-base-contracts",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "compile": "hardhat compile",
+    "abi:export": "hardhat compile && node scripts/export-abis.js",
+    "test": "hardhat test",
+    "coverage": "hardhat coverage",
+    "deploy:base": "hardhat run scripts/deploy.js --network base",
+    "deploy:groupgame": "hardhat run scripts/deploy-groupgame.js --network base",
+    "deploy:groupgame:usdc": "hardhat run scripts/deploy-groupgame-usdc.js --network base",
+    "deploy:groupgame:weth": "hardhat run scripts/deploy-groupgame-weth.js --network base"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@openzeppelin/contracts": "^5.0.2",
+    "dotenv": "^16.4.5",
+    "hardhat": "^2.22.0",
+    "solidity-coverage": "^0.8.14"
+  }
+}

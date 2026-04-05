@@ -1,0 +1,42 @@
+# Hardhat tests when opening/updating a PR into `main`.
+# Duplicate of repo-root `.github/workflows/hardhat-test-pr.yml` for repos whose
+# Git root is this `contracts` folder only.
+
+name: Hardhat tests (contracts)
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "**"
+      - ".github/workflows/hardhat-test-pr.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  hardhat-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: .
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Compile
+        run: npx hardhat compile
+
+      - name: Run tests
+        run: npm test

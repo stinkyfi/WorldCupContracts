@@ -1,0 +1,42 @@
+# Hardhat tests for `contracts/` on pull requests targeting `main`.
+# If your repo root is only the `contracts` package, copy this file to
+# `contracts/.github/workflows/` or merge into your existing workflow layout.
+
+name: Hardhat tests (contracts)
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "contracts/**"
+      - ".github/workflows/hardhat-test-pr.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  hardhat-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: contracts
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: contracts/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Compile
+        run: npx hardhat compile
+
+      - name: Run tests
+        run: npm test
