@@ -1,6 +1,5 @@
-# Slither static analysis for Hardhat contracts under `contracts/`.
-# GitHub only loads workflows from the repository root `.github/workflows/`
-# (see `contracts/SLITHER_CI.md`).
+# Slither static analysis — use this workflow when the Git repository root IS the
+# `contracts/` Hardhat project (no parent `contracts/` folder in the repo).
 
 name: Slither (contracts)
 
@@ -8,7 +7,10 @@ on:
   push:
     branches: [main]
     paths:
-      - "contracts/**"
+      - "**/*.sol"
+      - "hardhat.config.js"
+      - "package.json"
+      - "package-lock.json"
       - ".github/workflows/slither-contracts.yml"
 
 permissions:
@@ -19,18 +21,18 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: contracts
+        working-directory: .
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: "20"
+          node-version: "22"
           cache: npm
-          cache-dependency-path: contracts/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: Install JS dependencies
         run: npm ci
@@ -46,8 +48,8 @@ jobs:
       - name: Install Slither
         run: pip install "slither-analyzer>=0.10.0"
 
+      # Report is written to the Hardhat project root (here: repo root).
       - name: Run Slither
-        id: slither
         run: slither . --hardhat-ignore-compile --json slither-report.json
 
       - name: Upload Slither report
@@ -55,5 +57,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: slither-report
-          path: contracts/slither-report.json
+          path: slither-report.json
           if-no-files-found: warn
