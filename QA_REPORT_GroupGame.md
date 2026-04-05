@@ -47,7 +47,11 @@ Twelve group picks are stored as separate `bytes4` fields plus `exists`. Inline 
 
 ### `distributePrizes` ordering
 
-`prizesDistributed` is set **before** token transfers. With revert-on-failure ERC-20, a failed transfer **reverts the whole transaction**, so state does not stick in a half-paid state.
+`prizesDistributed` is set **before** token transfers. **`PrizesDistributed`** is emitted before the per-winner loop; **`PrizePayout`** / **`DustToOwner`** fire immediately before each **`safeTransfer`**. Uses OpenZeppelin **`SafeERC20`** (return value checked) and **`ReentrancyGuard`** (`nonReentrant` on `enterPool` and `distributePrizes`). `enterPool` follows checks → effects → **`PoolEntered`** → **`safeTransferFrom`**.
+
+### Slither / static analysis
+
+`slither.config.json` excludes **`pragma`** / **`solc-version`** (dependency noise) and **`calls-loop`** (batch payouts require transfers in a loop). Solidity compiler **0.8.28** via Hardhat.
 
 ### Payment token and `ENTRY_FEE`
 
@@ -82,7 +86,7 @@ Subscribe to these for a complete lifecycle without relying on custom-error deco
 | **`OfficialResultsSet(bytes32 indexed resultsHash, bytes4[12] officialResults)`** | After `setFinalResults` | `resultsHash` is `keccak256(abi.encode(officialResults))` — use for dedup / filters; full bracket in non-indexed data. |
 | **`PrizePayout(address indexed winner, uint256 amount)`** | Each `token` transfer to a winner | One log per winner; easy to sum per address. |
 | **`DustToOwner(address indexed to, uint256 amount)`** | When remainder dust is sent | **Omitted** if `dust == 0` (verified in tests). |
-| **`PrizesDistributed(uint256 winnerCount, uint256 shareEach, uint256 dustToOwner)`** | End of `distributePrizes` | Summary for the distribution round. |
+| **`PrizesDistributed(uint256 winnerCount, uint256 shareEach, uint256 dustToOwner)`** | **Before** per-winner transfers in `distributePrizes` | Summary of planned split; confirm amounts with `PrizePayout` / `DustToOwner`. |
 
 **Custom errors (indexers):** `InvalidRanking` = bad bracket at entry; `WinnerNotInPool` = winner list included a non-player; `DuplicateWinner` = duplicate address in `_winners`; `ZeroToken` / `ZeroEntryFee` = bad constructor args.
 

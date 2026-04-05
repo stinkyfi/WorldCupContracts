@@ -1,0 +1,9 @@
+{
+  "filter_paths": "node_modules",
+  "exclude_dependencies": true,
+  "detectors_to_exclude": [
+    "pragma",
+    "solc-version",
+    "calls-loop"
+  ]
+}

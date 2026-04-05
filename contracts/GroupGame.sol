@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.28;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "./Structs/Entry.sol";
 
 /**
@@ -10,8 +12,11 @@ import "./Structs/Entry.sol";
  * @author Solidity Dev
  * @notice A trustless prediction pool for the 48-team 2026 World Cup.
  * @dev Payment token and entry amount are fixed at deployment for any ERC-20 (any decimals).
+ *      Uses checks-effects-interactions: state and events before external token calls; `nonReentrant` on entry and payout.
  */
-contract GroupGame is Ownable {
+contract GroupGame is Ownable, ReentrancyGuard {
+    using SafeERC20 for IERC20;
+
     // --- Errors ---
     error AlreadyEntered();
     error TournamentFinalized();
@@ -30,6 +35,7 @@ contract GroupGame is Ownable {
     event OfficialResultsSet(bytes32 indexed resultsHash, bytes4[12] officialResults);
     event PrizePayout(address indexed winner, uint256 amount);
     event DustToOwner(address indexed to, uint256 amount);
+    /// @dev Emitted before transfers execute; use `PrizePayout` / `DustToOwner` for per-transfer confirmation.
     event PrizesDistributed(uint256 winnerCount, uint256 shareEach, uint256 dustToOwner);
 
     // --- State Variables ---
@@ -64,19 +70,14 @@ contract GroupGame is Ownable {
      * @notice Enter the pool by providing rankings for all 12 groups.
      * @param userGroups An array of 12 bytes4, each containing ranks 1, 2, 3, 4.
      */
-    function enterPool(bytes4[12] calldata userGroups) external {
+    function enterPool(bytes4[12] calldata userGroups) external nonReentrant {
         if (entries[msg.sender].exists) revert AlreadyEntered();
         if (resultsSet) revert TournamentFinalized();
 
-        // Validate all groups before moving money
         for (uint256 i = 0; i < 12; i++) {
             if (!isValidGroup(userGroups[i])) revert InvalidRanking();
         }
 
-        // Pull payment token — requires prior approval for `ENTRY_FEE`.
-        token.transferFrom(msg.sender, address(this), ENTRY_FEE);
-
-        // Save Entry
         Entry storage e = entries[msg.sender];
         e.groupA = userGroups[0]; e.groupB = userGroups[1];
         e.groupC = userGroups[2]; e.groupD = userGroups[3];
@@ -88,7 +89,10 @@ contract GroupGame is Ownable {
 
         uint256 playerIndex = players.length;
         players.push(msg.sender);
+
         emit PoolEntered(msg.sender, playerIndex);
+
+        token.safeTransferFrom(msg.sender, address(this), ENTRY_FEE);
     }
 
     /**
@@ -130,9 +134,9 @@ contract GroupGame is Ownable {
 
     /**
      * @notice Commits the off-chain–determined winner list and splits the pool evenly in `token`.
-     * @dev Requires `setFinalResults` first (`ResultsNotSet`). Emits `PrizePayout` per winner for indexers.
+     * @dev Requires `setFinalResults` first (`ResultsNotSet`). Emits `PrizePayout` before each `safeTransfer`.
      */
-    function distributePrizes(address[] calldata winners) external onlyOwner {
+    function distributePrizes(address[] calldata winners) external onlyOwner nonReentrant {
         if (!resultsSet) revert ResultsNotSet();
         if (prizesDistributed) revert AlreadyDistributed();
         if (winners.length == 0) revert NoWinnersProvided();
@@ -151,18 +155,18 @@ contract GroupGame is Ownable {
 
         prizesDistributed = true;
 
+        emit PrizesDistributed(n, share, dust);
+
         for (uint256 i = 0; i < n; i++) {
-            token.transfer(winners[i], share);
             emit PrizePayout(winners[i], share);
+            token.safeTransfer(winners[i], share);
         }
 
         if (dust > 0) {
             address o = owner();
-            token.transfer(o, dust);
             emit DustToOwner(o, dust);
+            token.safeTransfer(o, dust);
         }
-
-        emit PrizesDistributed(n, share, dust);
     }
 
     // --- Helpers ---

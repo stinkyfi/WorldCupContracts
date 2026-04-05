@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.28;
 
 struct Entry {
     // Packed into 2 storage slots (48 bytes + 1 bool)

@@ -305,12 +305,12 @@ describe("GroupGame", function () {
       const dust = pool % 2n;
       const distTx = game.connect(owner).distributePrizes([alice.address, bob.address]);
       await expect(distTx)
-        .to.emit(game, "PrizePayout")
+        .to.emit(game, "PrizesDistributed")
+        .withArgs(2n, share, dust)
+        .and.to.emit(game, "PrizePayout")
         .withArgs(alice.address, share)
         .and.to.emit(game, "PrizePayout")
-        .withArgs(bob.address, share)
-        .and.to.emit(game, "PrizesDistributed")
-        .withArgs(2n, share, dust);
+        .withArgs(bob.address, share);
     });
 
     it("reverts ResultsNotSet", async function () {
