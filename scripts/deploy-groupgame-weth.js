@@ -1,6 +1,6 @@
 const hre = require("hardhat");
 require("dotenv").config();
-const { BASE_MAINNET_WETH } = require("./chain-defaults");
+const { defaultWethToken } = require("./chain-defaults");
 
 /**
  * Deploy GroupGame using WETH (or any 18-decimal ERC-20) for entry fees.
@@ -15,8 +15,14 @@ const { BASE_MAINNET_WETH } = require("./chain-defaults");
  */
 async function main() {
   const [deployer] = await hre.ethers.getSigners();
+  const net = hre.network.name;
   const tokenAddress =
-    process.env.TOKEN_ADDRESS?.trim() || BASE_MAINNET_WETH;
+    process.env.TOKEN_ADDRESS?.trim() || defaultWethToken(net);
+  if (!tokenAddress) {
+    throw new Error(
+      `No default WETH/wrapped native for network "${net}". Set TOKEN_ADDRESS or FUJI_WETH_TOKEN / SONIC_DEFAULT_WETH / SONIC_TESTNET_DEFAULT_WETH (see scripts/chain-defaults.js).`,
+    );
+  }
   const decimals = Number(process.env.ENTRY_FEE_DECIMALS ?? "18");
   const units = process.env.ENTRY_FEE_UNITS ?? "20";
   const entryFee = hre.ethers.parseUnits(units, decimals);

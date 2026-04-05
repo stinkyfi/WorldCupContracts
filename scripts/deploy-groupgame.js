@@ -1,6 +1,6 @@
 const hre = require("hardhat");
 require("dotenv").config();
-const { BASE_MAINNET_USDC } = require("./chain-defaults");
+const { defaultUsdcToken } = require("./chain-defaults");
 
 /**
  * Generic GroupGame deploy: explicit token + raw entry fee, or defaults for Base USDC.
@@ -17,8 +17,14 @@ const { BASE_MAINNET_USDC } = require("./chain-defaults");
  */
 async function main() {
   const [deployer] = await hre.ethers.getSigners();
+  const net = hre.network.name;
   const tokenAddress =
-    process.env.TOKEN_ADDRESS?.trim() || BASE_MAINNET_USDC;
+    process.env.TOKEN_ADDRESS?.trim() || defaultUsdcToken(net);
+  if (!tokenAddress) {
+    throw new Error(
+      `No default USDC for network "${net}". Set TOKEN_ADDRESS (see scripts/chain-defaults.js).`,
+    );
+  }
 
   let entryFee;
   if (process.env.ENTRY_FEE !== undefined && process.env.ENTRY_FEE !== "") {
