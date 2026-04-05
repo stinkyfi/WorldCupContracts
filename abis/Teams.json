@@ -6,7 +6,7 @@
       "inputs": [
         {
           "internalType": "uint8",
-          "name": "_id",
+          "name": "teamId",
           "type": "uint8"
         }
       ],

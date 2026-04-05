@@ -53,7 +53,7 @@ Twelve group picks are stored as separate `bytes4` fields plus `exists`. Inline 
 
 - **`token`** — `IERC20 immutable`; any standard ERC-20 per deployment.
 - **`ENTRY_FEE`** — `uint256 immutable`, fee in that token’s **smallest units** (must match token decimals at deploy time, e.g. `parseUnits("20", 6)` vs `parseUnits("20", 18)`).
-- **Constructor:** `constructor(address _token, uint256 _entryFee)` — reverts **`ZeroToken`** / **`ZeroEntryFee`**.
+- **Constructor:** `constructor(address tokenAddress, uint256 feeAmount)` — reverts **`ZeroToken`** / **`ZeroEntryFee`**. Parameter names follow Slither **mixedCase**; public **`ENTRY_FEE`** uses `// slither-disable-next-line naming-convention` (Solidity convention keeps SCREAMING_SNAKE for this getter).
 - **Deploy scripts:** `scripts/deploy-groupgame-usdc.js` (default 6 decimals), `scripts/deploy-groupgame-weth.js` (default 18 decimals), `scripts/deploy-groupgame.js` (generic env). Shared defaults: `scripts/chain-defaults.js` (Base USDC / WETH addresses).
 
 ---
@@ -116,7 +116,7 @@ Remainder of `totalPool % _winners.length` goes to `owner()`. Document for users
 
 ### 5. Deployment
 
-`constructor(address _token, uint256 _entryFee)` — explicit token and raw fee. See `scripts/deploy-groupgame.js`, `deploy-groupgame-usdc.js`, `deploy-groupgame-weth.js`, and `scripts/chain-defaults.js` for Base addresses.
+`constructor(address tokenAddress, uint256 feeAmount)` — explicit token and raw fee. See `scripts/deploy-groupgame.js`, `deploy-groupgame-usdc.js`, `deploy-groupgame-weth.js`, and `scripts/chain-defaults.js` for Base addresses.
 
 ### 6. Frontend
 

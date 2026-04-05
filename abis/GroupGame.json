@@ -6,12 +6,12 @@
       "inputs": [
         {
           "internalType": "address",
-          "name": "_token",
+          "name": "tokenAddress",
           "type": "address"
         },
         {
           "internalType": "uint256",
-          "name": "_entryFee",
+          "name": "feeAmount",
           "type": "uint256"
         }
       ],
@@ -227,7 +227,7 @@
       "inputs": [
         {
           "internalType": "address[]",
-          "name": "_winners",
+          "name": "winners",
           "type": "address[]"
         }
       ],
@@ -240,7 +240,7 @@
       "inputs": [
         {
           "internalType": "bytes4[12]",
-          "name": "_userGroups",
+          "name": "userGroups",
           "type": "bytes4[12]"
         }
       ],
@@ -345,7 +345,7 @@
       "inputs": [
         {
           "internalType": "address",
-          "name": "_user",
+          "name": "player",
           "type": "address"
         }
       ],
@@ -448,7 +448,7 @@
       "inputs": [
         {
           "internalType": "bytes4[12]",
-          "name": "_official",
+          "name": "officialBracket",
           "type": "bytes4[12]"
         }
       ],
