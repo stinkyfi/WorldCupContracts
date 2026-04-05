@@ -158,7 +158,7 @@ When this **`contracts/`** tree is the **root** of the Git repository, workflows
 
 | Workflow | Trigger | Role |
 |----------|---------|------|
-| **`slither-contracts.yml`** | Push to `main` (paths: `*.sol`, config, lockfile, workflow) | `npm ci` → `hardhat compile` → Slither → upload **`slither-report.json`** as an artifact |
+| **`slither-contracts.yml`** | Push to `main`, PRs to `main`, `workflow_dispatch` (path filters) | `npm ci` → `hardhat compile` → Slither → upload **`slither-report.json`** as an artifact |
 | **`hardhat-test-pr.yml`** | Pull requests to `main` | `npm ci` → compile → `npm test` |
 
 Steps use **Node 22**, **Python 3.12**, **checkout/setup-node/setup-python v5**, and **`actions/upload-artifact@v4`** for the Slither JSON.
@@ -189,24 +189,62 @@ Requires a sibling **`web/`** package for the web paths (as in the WorldCup mono
 
 ## Deployment
 
-Scripts are **examples**; always verify addresses, amounts, and network.
+Scripts are **examples**; always verify token addresses, fee amounts, and explorers before mainnet.
 
-| npm script | Script file | Notes |
-|------------|-------------|--------|
-| `npm run deploy:groupgame` | `scripts/deploy-groupgame.js` | Generic `TOKEN_ADDRESS`, `ENTRY_FEE` or `ENTRY_FEE_UNITS` / `ENTRY_FEE_DECIMALS` |
-| `npm run deploy:groupgame:usdc` | `scripts/deploy-groupgame-usdc.js` | Defaults for USDC-style 6 decimals (Base USDC address in `chain-defaults.js`) |
-| `npm run deploy:groupgame:weth` | `scripts/deploy-groupgame-weth.js` | Defaults for 18 decimals / WETH-style |
-| `npm run deploy:base` | `scripts/deploy.js` | Legacy / other factory; may require env vars |
+### Environment
 
-Shared addresses: **`scripts/chain-defaults.js`**.
+Copy **`.env.example`** to **`.env`** (gitignored). At minimum for live networks:
 
-Example (Base), after configuring `.env` and a funded deployer:
+| Variable | Purpose |
+|----------|---------|
+| `DEPLOYER_PRIVATE_KEY` | `0x…` private key for the deployer account |
+| `TOKEN_ADDRESS` | Optional; overrides the default ERC-20 for the chosen network (see `scripts/chain-defaults.js`) |
+| `ENTRY_FEE_UNITS` / `ENTRY_FEE_DECIMALS` | Optional fee in human units (defaults depend on script) |
+
+Per-network RPC URLs (each falls back to a public default in `hardhat.config.js` if unset):
+
+| Network | Hardhat `--network` | Chain ID | Env var |
+|---------|---------------------|----------|---------|
+| Base mainnet | `base` | 8453 | `BASE_RPC_URL` |
+| Base Sepolia (testnet) | `baseSepolia` | 84532 | `BASE_SEPOLIA_RPC_URL` |
+| Avalanche C-Chain | `avalanche` | 43114 | `AVALANCHE_RPC_URL` |
+| Avalanche Fuji (testnet) | `fuji` | 43113 | `FUJI_RPC_URL` |
+| Sonic | `sonic` | 146 | `SONIC_RPC_URL` |
+| Sonic testnet (Blaze) | `sonicTestnet` | 57054 | `SONIC_TESTNET_RPC_URL` |
+
+**USDC defaults** are baked into `chain-defaults.js` for Base, Base Sepolia, Avalanche, and Fuji. **Sonic** has no fixed default USDC: set **`TOKEN_ADDRESS`**, or **`SONIC_DEFAULT_USDC`** / **`SONIC_TESTNET_DEFAULT_USDC`** (see that file).
+
+**WETH / 18-decimal deploys** (`deploy-groupgame-weth.js`): defaults exist for Base, Base Sepolia, and Avalanche. For **Fuji**, set **`TOKEN_ADDRESS`** or **`FUJI_WETH_TOKEN`**. For **Sonic** networks, set **`TOKEN_ADDRESS`** or **`SONIC_DEFAULT_WETH`** / **`SONIC_TESTNET_DEFAULT_WETH`**.
+
+### npm scripts and scripts
+
+| npm script | Runs | Notes |
+|------------|------|--------|
+| `npm run deploy:groupgame` | `deploy-groupgame.js` → `--network base` | Generic fee envs |
+| `npm run deploy:groupgame:usdc` | `deploy-groupgame-usdc.js` → `--network base` | USDC-style (6 decimals default) |
+| `npm run deploy:groupgame:weth` | `deploy-groupgame-weth.js` → `--network base` | WETH-style (18 decimals default) |
+| `npm run deploy:base` | `deploy.js` → `--network base` | Legacy factory; may need extra env |
+| `npm run deploy:groupgame:usdc:base-sepolia` | `deploy-groupgame-usdc.js` → `baseSepolia` | |
+| `npm run deploy:groupgame:usdc:avalanche` | → `avalanche` | |
+| `npm run deploy:groupgame:usdc:fuji` | → `fuji` | |
+| `npm run deploy:groupgame:usdc:sonic` | → `sonic` | Set token envs if no default |
+| `npm run deploy:groupgame:usdc:sonic-testnet` | → `sonicTestnet` | |
+| `npm run deploy:groupgame:weth:base-sepolia` | `deploy-groupgame-weth.js` → `baseSepolia` | |
+| `npm run deploy:groupgame:weth:avalanche` | → `avalanche` | |
+| `npm run deploy:groupgame:weth:sonic` | → `sonic` | Set `TOKEN_ADDRESS` or Sonic WETH envs |
+| `npm run deploy:groupgame:weth:sonic-testnet` | → `sonicTestnet` | |
+
+You can always call Hardhat directly with any network name:
 
 ```bash
-npx hardhat run scripts/deploy-groupgame-usdc.js --network base
+npx hardhat run scripts/deploy-groupgame-usdc.js --network baseSepolia
+npx hardhat run scripts/deploy-groupgame-usdc.js --network avalanche
+npx hardhat run scripts/deploy-groupgame-usdc.js --network fuji
+npx hardhat run scripts/deploy-groupgame-usdc.js --network sonic
+npx hardhat run scripts/deploy-groupgame-usdc.js --network sonicTestnet
 ```
 
-Network **`base`** is defined in `hardhat.config.js` (`BASE_RPC_URL`, `DEPLOYER_PRIVATE_KEY`).
+Shared defaults and overrides: **`scripts/chain-defaults.js`**.
 
 ---
 
@@ -217,6 +255,7 @@ Network **`base`** is defined in `hardhat.config.js` (`BASE_RPC_URL`, `DEPLOYER_
 | `hardhat.config.js` | Solidity version, optimizer, `viaIR`, networks, coverage |
 | `slither.config.json` | Slither paths and excluded detectors |
 | `.env` | RPC, keys (never commit secrets; `.env` is gitignored) |
+| `.env.example` | Documented template for deploy / RPC env vars |
 | `.gitignore` | Ignores `node_modules`, `artifacts`, `cache`, `coverage`, `coverage.json`, `.env` |
 
 ---
@@ -224,7 +263,7 @@ Network **`base`** is defined in `hardhat.config.js` (`BASE_RPC_URL`, `DEPLOYER_
 ## Continuous integration
 
 - **Tests on PR**: install → compile → `npm test` (see `hardhat-test-pr.yml`).
-- **Slither on main**: install → compile → Slither JSON artifact (see `slither-contracts.yml`).
+- **Slither**: on pushes to `main`, PRs targeting `main`, and manual dispatch — install → compile → Slither JSON artifact (see `slither-contracts.yml`; monorepo root may mirror this with `working-directory: contracts`).
 
 Keep **`package-lock.json`** committed so `npm ci` is reproducible in CI.
 

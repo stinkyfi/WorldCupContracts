@@ -1,22 +1,30 @@
 const hre = require("hardhat");
 require("dotenv").config();
-const { BASE_MAINNET_USDC } = require("./chain-defaults");
+const { defaultUsdcToken } = require("./chain-defaults");
 
 /**
  * Deploy GroupGame using USDC (or any ERC-20) with a human-readable fee in token decimals.
  *
  * Env:
- *   TOKEN_ADDRESS — ERC-20 (default: Base mainnet USDC)
+ *   TOKEN_ADDRESS — ERC-20 (overrides network default)
+ *   SONIC_DEFAULT_USDC / SONIC_TESTNET_DEFAULT_USDC — optional defaults for Sonic networks
  *   ENTRY_FEE_UNITS — optional override as decimal string in token units (default: "20")
  *   ENTRY_FEE_DECIMALS — optional (default: 6 for USDC)
  *
  * Usage:
  *   npx hardhat run scripts/deploy-groupgame-usdc.js --network base
+ *   npx hardhat run scripts/deploy-groupgame-usdc.js --network baseSepolia
  */
 async function main() {
   const [deployer] = await hre.ethers.getSigners();
+  const net = hre.network.name;
   const tokenAddress =
-    process.env.TOKEN_ADDRESS?.trim() || BASE_MAINNET_USDC;
+    process.env.TOKEN_ADDRESS?.trim() || defaultUsdcToken(net);
+  if (!tokenAddress) {
+    throw new Error(
+      `No default USDC for network "${net}". Set TOKEN_ADDRESS or SONIC_DEFAULT_USDC / SONIC_TESTNET_DEFAULT_USDC (see scripts/chain-defaults.js).`,
+    );
+  }
   const decimals = Number(process.env.ENTRY_FEE_DECIMALS ?? "6");
   const units = process.env.ENTRY_FEE_UNITS ?? "20";
   const entryFee = hre.ethers.parseUnits(units, decimals);

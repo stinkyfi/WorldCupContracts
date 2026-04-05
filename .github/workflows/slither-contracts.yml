@@ -12,6 +12,15 @@ on:
       - "package.json"
       - "package-lock.json"
       - ".github/workflows/slither-contracts.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "**/*.sol"
+      - "hardhat.config.js"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/slither-contracts.yml"
+  workflow_dispatch:
 
 permissions:
   contents: read
